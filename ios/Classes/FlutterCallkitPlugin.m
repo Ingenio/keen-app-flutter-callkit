@@ -42,8 +42,10 @@
 + (FlutterCallkitPlugin *)sharedInstance {
     return [FlutterCallkitPlugin sharedPluginWithRegistrar:nil];
 }
+NSMutableArray *callUpdateData;
 
 + (instancetype)sharedPluginWithRegistrar:(NSObject<FlutterPluginRegistrar> *)registrar {
+    callUpdateData = [[NSMutableArray alloc] init];
     static FlutterCallkitPlugin *instance;
     static dispatch_once_t initToken;
     dispatch_once(&initToken, ^{
@@ -217,7 +219,7 @@
         } else {
             result([FlutterError errorHandlerIsNotRegistered:@"didRemoveAllIdentifiablePhoneNumbers"]);
         }
-        
+
     } else if ([@"openSettings" isEqualToString:method]) {
         if (@available(iOS 13.4, *)) {
             [CXCallDirectoryManager.sharedInstance openSettingsWithCompletionHandler:^(NSError * _Nullable error) {
@@ -300,13 +302,18 @@
         } else {
             __strong typeof(wSelf) sSelf = wSelf;
             if (sSelf.eventSink) {
+                NSLog(@"Flutter CallKit: reportNewIncomingCallWithUUID eventSink has been initialized");
                 sSelf.eventSink(@{
                     @"event": @"didDisplayIncomingCall",
                     @"uuid": UUID.UUIDString,
                     @"callUpdate": [callUpdate toDictionary]
                 });
+            } else {
+                [callUpdateData addObject: [NSDictionary dictionaryWithObjectsAndKeys:@"didDisplayIncomingCall", @"event", UUID.UUIDString, @"uuid", [callUpdate toDictionary],@"callUpdate", nil]];
+                NSLog(@"Flutter CallKit: reportNewIncomingCallWithUUID has NOT been initialized, data added to queue");
             }
         }
+        NSLog(@"Flutter CallKit: reportNewIncomingCallWithUUID called ended");
     }];
 }
 
@@ -318,6 +325,12 @@
 
 - (FlutterError * _Nullable)onListenWithArguments:(id _Nullable)arguments eventSink:(nonnull FlutterEventSink)events {
     self.eventSink = events;
+    if ([callUpdateData count] != 0) {
+        for (id value in callUpdateData) {
+            self.eventSink(value);
+        }
+        [callUpdateData removeAllObjects];
+    }
     return nil;
 }
 
