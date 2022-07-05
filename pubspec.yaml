@@ -3,6 +3,7 @@ description: Flutter SDK for CallKit integration to Flutter applications on iOS
 version: 2.1.0
 homepage: https://github.com/voximplant/flutter_callkit
 repository: https://github.com/voximplant/flutter_callkit
+publish_to: none
 
 environment:
   sdk: '>=2.12.2 <3.0.0'
